@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from pydantic import BaseModel
 from pydantic import EmailStr
+from typing import Optional
 app = FastAPI()
 
 class CreateUser(BaseModel):
@@ -12,6 +13,19 @@ class CreateUser(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
+    name: str
+    email: EmailStr
+    model_config = {"extra": "ignore"}  # ignoruj dodatkowe pola w response
+
+class UserUpdate(BaseModel): #PATCH
+    #id: int
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    metadata: Optional[dict] = None
+    model_config = {"extra": "ignore"}  # ignoruj dodatkowe pola w response
+
+class UserOverWrite(BaseModel): #PUT
+    #id: int
     name: str
     email: EmailStr
     model_config = {"extra": "ignore"}  # ignoruj dodatkowe pola w response
@@ -65,3 +79,23 @@ async def create_user(user: CreateUser):
     mock_users.append(user_dict)
 
     return user_dict
+@app.patch("/users/{id}", response_model=UserResponse)
+async def update_user(id: int, user: UserUpdate):
+    for existing_user in mock_users:
+        if id == existing_user["id"]:            
+            if user.name is not None:
+                existing_user ["name"] = user.name
+            if user.email is not None:
+                existing_user ["email"] = user.email
+            if user.metadata is not None:
+                existing_user.update = user.metadata
+            return existing_user  
+    raise HTTPException(status_code=404, detail="User not found")
+
+
+@app.put("/users/{id}", response_model=UserResponse)
+async def update_user(user: UserOverWrite):
+            for user in mock_users:
+                if user["id"] == id:
+                    return user
+            raise HTTPException(status_code=404, detail="User not found")
