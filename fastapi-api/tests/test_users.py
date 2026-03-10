@@ -1,8 +1,8 @@
 import pytest
-from fastapi.testclient import TestClient
-from app import app
+from  conftest import client
+from app import app 
 
-client = TestClient(app)
+
 @pytest.mark.get
 def test_get_existing_user_returns_200():
     response = client.get("/users/1")
@@ -103,6 +103,84 @@ def test_post_additional_field_return_422():
 
 
 
+'''
+1️⃣ update name
+2️⃣ update email
+3️⃣ duplicate email → 409
+4️⃣ update metadata merge
+5️⃣ user not found → 404'''
+
+@pytest.mark.patch
+def test_patch_update_name_200(client):
+
+    response = client.patch(
+        "/users/1",
+        json={"name": "Adam"}
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["name"] == "Adam"
+    assert data["email"] == "alice@example.com"
+
+@pytest.mark.patch
+def test_patch_update_email_200(client):
+
+    response = client.patch(
+        "/users/1",
+        json={"email": "test@example.com"}
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["name"] == "Alice"
+    assert data["email"] == "test@example.com"
+
+@pytest.mark.patch
+def test_patch_update_duplicate_email_409(client):
+
+    response = client.patch(
+        "/users/1",
+        json={"email": "BOB@example.com"}
+    )
+    data = response.json()
+    assert response.status_code == 409    
+    assert data["detail"] == "Email already exists"
+
+@pytest.mark.patch
+def test_patch_metadata_merge_200(client):
+
+    client.patch("/users/1", json={
+        "metadata": {
+    "City": "Warsaw"
+  }
+    })
+    response = client.patch("/users/1", json={
+        "metadata": {
+    "Favorite Band": "Black Sabbath"
+  }
+    }
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["metadata"]["City"] == "Warsaw"
+    assert data["metadata"]["Favorite Band"] == "Black Sabbath"    
+
+@pytest.mark.patch
+def test_patch_non_existing_user_returns_404(client):
+    response = client.patch(
+        "/users/999",
+        json={"email": "BOB@example.com"}
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "User not found"
 
 
 
@@ -110,8 +188,13 @@ def test_post_additional_field_return_422():
 
 
 
-
-
+'''
+1 update name*
+2 update email*
+3 duplicate email → 409
+4 metadata merge
+5 user not found → 404
+'''
 
 
 
