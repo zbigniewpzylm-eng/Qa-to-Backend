@@ -70,7 +70,6 @@ async def get_user(id: int):
             return user
     raise HTTPException(status_code=404, detail="User not found")
 
-# POST USER
 @app.post("/users", response_model=UserResponse, status_code=201)
 async def create_user(user: CreateUser):
     #print("Incoming user:", user)
@@ -133,3 +132,41 @@ async def update_user(id: int, user: UserUpdate):
     raise HTTPException(status_code=404, detail="User not found")
 
 
+@app.put("/users/{id}", response_model=UserResponse)
+async def overwrite_user(id: int, user: UserOverWrite):
+
+
+
+
+    for existing_user in mock_users:
+
+        if existing_user["id"] == id:
+
+            # duplicate email check
+            for u in mock_users:
+
+                email = u.get("email")
+
+                if email and email.lower() == user.email.lower() and u["id"] != id:
+                    raise HTTPException(status_code=409, detail="Email already exists")
+
+            existing_user["name"] = user.name
+            existing_user["email"] = user.email
+
+            # usuń metadata jeśli było wcześniej
+            existing_user.pop("metadata", None)
+
+            return existing_user
+
+    raise HTTPException(status_code=404, detail="User not found")
+
+@app.delete("/users/{id}", status_code=204)
+async def delete_user(id: int):
+
+    for user in mock_users:
+
+        if user["id"] == id:
+            mock_users.remove(user)
+            return
+
+    raise HTTPException(status_code=404, detail="User not found")
