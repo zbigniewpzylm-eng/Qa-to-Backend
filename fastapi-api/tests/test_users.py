@@ -1,8 +1,8 @@
 import pytest
 from  conftest import client
-from app import app 
+#from app import app 
 
-
+######################################### GET ####################################
 @pytest.mark.get
 def test_get_existing_user_returns_200(client):
     response = client.get("/users/1")
@@ -33,7 +33,7 @@ def test_get_additional_forbiden_data_returns_500(client):
     response = client.get("/users/5")    
     assert response.status_code == 422
     assert "extra fields" in response.json()["detail"][0]["msg"].lower()
-
+######################################### POST ####################################
 @pytest.mark.post
 def test_post_user_created_return_201(client):
     response = client.post("/users/", json= {
@@ -87,7 +87,7 @@ def test_post_missing_name_return_422(client):
 
 
 @pytest.mark.post
-def test_post_additional_field_return_422():
+def test_post_additional_field_return_422(client):
     response = client.post("/users/", json= {
   "name": "string",
   "email": "dup@example.com",
@@ -99,10 +99,7 @@ def test_post_additional_field_return_422():
     assert response.status_code == 422
     assert data["detail"][0]["loc"][-1] == "age"
     assert "extra inputs are not permitted" in data["detail"][0]["msg"].lower()
-
-
-
-
+######################################### PATCH ####################################
 @pytest.mark.patch
 def test_patch_update_name_200(client):
 
@@ -174,7 +171,7 @@ def test_patch_non_existing_user_returns_404(client):
     )
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
-
+######################################### PUT ####################################
 @pytest.mark.put
 def test_put_userOverwrite_returns_204(client):
     response = client.put(
@@ -231,7 +228,7 @@ def test_put_duplicate_email_created_return_409(client):
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Email already exists"
-
+######################################### PATCH ####################################
 @pytest.mark.delete
 def test_delete_user_returns_209(client):
     response = client.delete("/users/1")
@@ -241,6 +238,40 @@ def test_delete_user_returns_209(client):
 @pytest.mark.delete
 def test_delete_userNotFound_returns_404(client):
     response = client.delete("/users/1")
-
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
+
+################################################## E2E #############################################
+@pytest.mark.e2e
+def test_full_e2e_returns_404(client):
+    response = client.post("/users/", json= {
+  "name": "flow_name",
+  "email": "flowtest@example.com"
+})
+    data = response.json()
+    user_id  = data["id"]
+    assert response.status_code == 201
+
+    response = client.get(f"/users/{user_id}")   
+    assert response.status_code == 200
+    assert response.json() == {"id": user_id, "name": "flow_name", "email": "flowtest@example.com"}
+
+    response = client.patch(
+        f"/users/{user_id}",
+        json={"name": "Adam"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["name"] == "Adam"
+    assert data["email"] == "flowtest@example.com"
+
+    response = client.delete(f"/users/{user_id}")
+    assert response.status_code == 204
+
+
+    response =  client.get(f"/users/{user_id}")   
+    assert response.status_code == 404
+
+
+      
