@@ -9,8 +9,12 @@ router = APIRouter(prefix="/users", tags=["users"])
 #
 @router.get("/{id}", response_model=schemas.UserResponse)
 async def get_user(id: int):
-    return await services.get_user(id) #get
-@router.post("", response_model=schemas.UserResponse, status_code=201)
+    try:
+        return await services.get_user(id) #get
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    
+@router.post("/", response_model=schemas.UserResponse, status_code=201)
 async def create_user(user: schemas.CreateUser):
     try:
         return await services.create_user(user)
